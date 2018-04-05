@@ -40,15 +40,16 @@ unsigned char waveformVolume[] =
 // erroneous punctual distance
 // measurements
 unsigned int distance_buffer[] = {16000,
-16000, 16000};
+16000, 16000,16000, 16000};
 
-const int distance_length = 3;
+const int distance_length = 5;
 int distance_index = 0;
 
 // The overflow values for 2 octaves
 
-int frequencies[] = { 55, 55, 55, 55,
-55, 55, 56, 59, 63, 66, 70, 74, 79,
+//min 62
+//17
+int frequencies[] = {62, 63, 66, 70, 74, 79,
 84, 89, 94, 100, 105, 112, 118, 126,
 133, 141, 149};
 
@@ -71,7 +72,8 @@ volatile byte waveindex = 0;
 volatile byte currentvalue = 0;
 
 // Pin used for ultra-sonic sensor
-const int pingPin = 7;
+const int trigPin = 6;
+const int echoPin = 7;
 
 // Pins for the potentiometers
 const int sustainPin = 1;
@@ -79,7 +81,7 @@ const int sensitivityPin = 2;
 
 // Pins for each finger of the left
 // hand
-const int finger1 = 9;
+const int finger1 = 8;
 const int finger2 = 10;
 const int finger3 = 11;
 const int finger4 = 12;
@@ -105,85 +107,88 @@ void setup() {
 
   Serial.begin(9600);
 
-lis.begin(0x18);
-lis.setRange(LIS3DH_RANGE_4_G);  
+  lis.begin(0x18);
+  lis.setRange(LIS3DH_RANGE_4_G);  
+  
+  pinMode(speakerLeftPin,OUTPUT); //Speaker on pin 3
+  pinMode(speakerRightPin,OUTPUT); //Speaker on pin 4
 
-pinMode(speakerLeftPin,OUTPUT); //Speaker on pin 3
-pinMode(speakerRightPin,OUTPUT); //Speaker on pin 4
-
-pinMode(finger1,INPUT);
-pinMode(finger2,INPUT);
-pinMode(finger3,INPUT);
-pinMode(finger4,INPUT);
-
-
-/**************************
-    PWM audio configuration
-****************************/
-//set Timer2 to fast PWM mode
-//(doubles PWM frequency)
-bitSet(TCCR1A, WGM11); 
-bitSet(TCCR1B, CS10);
-bitClear(TCCR1B, CS11);
-bitClear(TCCR1B, CS12);
-
-//enable interrupts now that registers
-// have been set
-sei();
-
-
-/*************************
-Timer 1 interrupt configuration
-*************************/
-//disable interrupts while
-// registers are configured
-cli();
-
-/* Normal port operation, pins disconnected
-from timer operation (breaking pwm) */
-bitClear(TCCR1A, COM1A1);
-bitClear(TCCR1A, COM1A1);
-bitClear(TCCR1A, COM1A1);
-bitClear(TCCR1A, COM1A1);
-
-/* Mode 4, CTC with TOP set by register
-OCR1A. Allows us to set variable timing for
-the interrupt by writing new values to
-OCR1A. */
-bitClear(TCCR1A, WGM10);
-bitClear(TCCR1A, WGM11);
-bitSet(TCCR1B, WGM12);
-bitClear(TCCR1B, WGM13);
-
-/* set the clock prescaler to /8.  */
-bitClear(TCCR1B, CS10);
-bitSet(TCCR1B, CS11);
-bitClear(TCCR1B, CS12);
-
-/* Disable Force Output Compare for
-Channels A and B. */
-bitClear(TCCR1C, FOC1A);
-bitClear(TCCR1C, FOC1B);
-
-/* Initializes Output Compare
-Register A at 160 to set the
-initial pitch */
-OCR1A = 160;
-
-//disable input capture interrupt
-bitClear(TIMSK1, ICIE1); 
-//disable Output
-//Compare B Match Interrupt
-bitClear(TIMSK1, OCIE1B); 
-//enable Output
-//Compare A Match Interrupt
-bitSet(TIMSK1, OCIE1A); 
-//disable Overflow Interrupt
-bitClear(TIMSK1, TOIE1); 
-
-// enable interrupts now that
-// registers have been set
-sei();
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  
+  pinMode(finger1,INPUT);
+  pinMode(finger2,INPUT);
+  pinMode(finger3,INPUT);
+  pinMode(finger4,INPUT);
+  
+  
+  /**************************
+      PWM audio configuration
+  ****************************/
+  //set Timer2 to fast PWM mode
+  //(doubles PWM frequency)
+  bitSet(TCCR1A, WGM11); 
+  bitSet(TCCR1B, CS10);
+  bitClear(TCCR1B, CS11);
+  bitClear(TCCR1B, CS12);
+  
+  //enable interrupts now that registers
+  // have been set
+  sei();
+  
+  
+  /*************************
+  Timer 1 interrupt configuration
+  *************************/
+  //disable interrupts while
+  // registers are configured
+  cli();
+  
+  /* Normal port operation, pins disconnected
+  from timer operation (breaking pwm) */
+  bitClear(TCCR1A, COM1A1);
+  bitClear(TCCR1A, COM1A1);
+  bitClear(TCCR1A, COM1A1);
+  bitClear(TCCR1A, COM1A1);
+  
+  /* Mode 4, CTC with TOP set by register
+  OCR1A. Allows us to set variable timing for
+  the interrupt by writing new values to
+  OCR1A. */
+  bitClear(TCCR1A, WGM10);
+  bitClear(TCCR1A, WGM11);
+  bitSet(TCCR1B, WGM12);
+  bitClear(TCCR1B, WGM13);
+  
+  /* set the clock prescaler to /8.  */
+  bitClear(TCCR1B, CS10);
+  bitSet(TCCR1B, CS11);
+  bitClear(TCCR1B, CS12);
+  
+  /* Disable Force Output Compare for
+  Channels A and B. */
+  bitClear(TCCR1C, FOC1A);
+  bitClear(TCCR1C, FOC1B);
+  
+  /* Initializes Output Compare
+  Register A at 160 to set the
+  initial pitch */
+  OCR1A = 160;
+  
+  //disable input capture interrupt
+  bitClear(TIMSK1, ICIE1); 
+  //disable Output
+  //Compare B Match Interrupt
+  bitClear(TIMSK1, OCIE1B); 
+  //enable Output
+  //Compare A Match Interrupt
+  bitSet(TIMSK1, OCIE1A); 
+  //disable Overflow Interrupt
+  bitClear(TIMSK1, TOIE1); 
+  
+  // enable interrupts now that
+  // registers have been set
+  sei();
 }
 
 // Timer overflow handler
@@ -207,7 +212,6 @@ ISR(TIMER1_COMPA_vect) {
  }
 
  //Set the output value
-
  if (volume > 0.03) {
   analogWrite(speakerLeftPin,
    waveformVolume[waveindex]);
@@ -218,19 +222,30 @@ ISR(TIMER1_COMPA_vect) {
  }
  else {
    analogWrite(speakerLeftPin, 0);
-
-   analogWrite(speakerRightPin, 0);
-   
+   analogWrite(speakerRightPin, 0);  
  }
-
- 
- 
 
  // Update the pitch
  OCR1A = pitch; 
 }  
 
 
+//find the lowest non-zero number, returen zero if
+//all are zeros
+int find_min(int array[]){
+  int index = array[0];
+  for(int i = 1; i < 5; i++) {
+    if(array[i] != 0){
+      if(index = 0){
+        index = array[i];
+      }
+      else if(index > array[i]){
+        index = array[i];
+      }
+    }
+  }
+  return index;
+}
 
 
 
@@ -247,7 +262,7 @@ void determineParameters() {
  // distance measured
  cm = 16000;
  for(int i = 0; i < distance_length; i++) {
-  cm = min(cm, distance_buffer[i]);
+  cm = find_min(distance_buffer);
  }
 
 
@@ -313,20 +328,21 @@ void determineParameters() {
  
  if(cm < 102 && cm > 0) {
   if(cm > 30) {
-     num = 7 +
-     (((cm - 30) / 24) * 4 + fingerValue - 1);
+     num = 
+     ((cm - 30) / 24) * 4 + fingerValue - 1;
    pitch = frequencies[num];
   }else{
    pitch = map(cm, 0, 30, 39, 79);
   }
  }else{
-  pitch = frequencies[7 +
-   (((102 - 30) / 24) * 4 + fingerValue - 1)];
+  num = 
+   ((102 - 30) / 24) * 4 + fingerValue - 1;
+  pitch = frequencies[num];
  }
 
  
   Serial.print('\n');
-  Serial.print(volume);
+  Serial.print(cm);
  
 
  // Delay to avoid bouncing signals
@@ -340,20 +356,20 @@ void loop()
 
 // TESTING --- Disable the code for reading sensors
 
-/*  
+
   
  // Desactivate interputs, send a ping
  // message and wait for the answer.
  cli();
- pinMode(pingPin, OUTPUT);
- digitalWrite(pingPin, LOW);
+ digitalWrite(trigPin, LOW);
  delayMicroseconds(2);
- digitalWrite(pingPin, HIGH);
+ digitalWrite(trigPin, HIGH);
  delayMicroseconds(5);
- digitalWrite(pingPin, LOW);
- duration = pulseIn(pingPin, HIGH, 2000);
+ digitalWrite(trigPin, LOW);
+ 
+ duration = pulseIn(echoPin, HIGH, 4000);
  sei();
-*/
+
  // Check which fingers are pressed
  fingerValue = 5;
  if(!digitalRead(finger4)){
@@ -384,7 +400,7 @@ void loop()
   // TESTING --- Made Up Sensor Values
 
 
-  duration = 1000;
+  //duration = 2000;
 
   //fingerValue = 1;
 
