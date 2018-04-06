@@ -22,15 +22,17 @@ pinMode(echoPin, INPUT);
 //all are zeros
 int find_min(int array[]){
   int index = array[0];
-  for(int i = 0; i < 5; i++) {
-    if(array[i] != 0){
-      if(index = 0){
+  for(int i = 1; i < 5; i++) {
+    if(array[i] > 0){
+      
+      if(index == 0){
         index = array[i];
       }
-      else if(index < array[i]){
+      else if(index > array[i]){
         index = array[i];
       }
-    }
+      
+    }    
   }
   return index;
 }
