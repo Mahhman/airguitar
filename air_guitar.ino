@@ -339,9 +339,9 @@ void determineParameters() {
    pitch = 99;//map(cm, 0, 30, 99, 127);
   }
  }else{
-  num = 
-   11 + fingerValue;
-  pitch = frequencies[num];
+  num = 11 + fingerValue;
+  if(num < 16) { pitch = frequencies[num]; }
+  else {pitch = frequencies[15]; }
  }
 
 
