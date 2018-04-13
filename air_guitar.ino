@@ -55,7 +55,8 @@ int frequencies[] =
 133,142,148,160,169,
 177,188,199,212,223,
 237};
-
+int max_frequencies[]=
+{ 78,79,82,88,94,99};//dummy 78
 
 
 // Initial pitch
@@ -336,7 +337,7 @@ void determineParameters() {
      if(num < 16) { pitch = frequencies[num]; }
      else {pitch = frequencies[15]; }
   }else{
-   pitch = 99;//map(cm, 0, 30, 99, 127);
+   pitch = max_frequencies[fingerValue];
   }
  }else{
   num = 11 + fingerValue;
