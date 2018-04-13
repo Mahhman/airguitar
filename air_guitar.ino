@@ -36,6 +36,7 @@ unsigned char waveformVolume[] =
 162, 142, 118, 99, 84, 68, 54, 40, 28,
 19, 10,  7,  0,  0,  5,  9, 14, 21, 33,
 49, 59, 65, 75, 92, 110};
+
 // An array used as a buffer to avoid
 // erroneous punctual distance
 // measurements
@@ -48,10 +49,12 @@ int distance_index = 0;
 // The overflow values for 2 octaves
 
 //min 62
-//17
-int frequencies[] = {62, 63, 66, 70, 74, 79,
-84, 89, 94, 100, 105, 112, 118, 126,
-133, 141, 149};
+//16
+int frequencies[] = 
+{99,106,113,120,127,
+133,142,148,160,169,
+177,188,199,212,223,
+237};
 
 
 
@@ -63,7 +66,7 @@ int pitch = 160;
 float volume = 0;
 
 //audio playback on pin 3
-byte speakerLeftPin = 3; 
+byte speakerLeftPin = 2; 
 byte speakerRightPin = 4; 
 
 //index variable for position in
@@ -76,8 +79,8 @@ const int trigPin = 6;
 const int echoPin = 7;
 
 // Pins for the potentiometers
-const int sustainPin = 1;
-const int sensitivityPin = 2;
+const int sustainPin = A1;
+const int sensitivityPin = A2;
 
 // Pins for each finger of the left
 // hand
@@ -235,8 +238,8 @@ ISR(TIMER1_COMPA_vect) {
 int find_min(int array[]){
   int index = array[0];
   for(int i = 1; i < 5; i++) {
-    if(array[i] != 0){
-      if(index = 0){
+    if(array[i] > 0){
+      if(index == 0){
         index = array[i];
       }
       else if(index > array[i]){
@@ -267,9 +270,9 @@ void determineParameters() {
 
 
  
- float sustain = 1.5;
- /*map(sustainRead, 0,
-  1024, 101, 130) / 100.0;*/
+ float sustain = 
+    map(sustainRead, 0,
+    1024, 101, 130) / 100.0;
  int sensitivity =
     map(sensitivityRead,
     0, 1024, 100, 200);
@@ -323,41 +326,35 @@ void determineParameters() {
 
 
 // TESTING
-  //pitch = 120;
- long num;
+ // pitch=70;
+  long num;
+ 
  
  if(cm < 102 && cm > 0) {
   if(cm > 30) {
-     num = 
-     ((cm - 30) / 24) * 4 + fingerValue - 1;
-   pitch = frequencies[num];
+     num = ((cm - 30) / 24) * 4 + fingerValue - 1;
+     if(num < 16) { pitch = frequencies[num]; }
+     else {pitch = frequencies[15]; }
   }else{
-   pitch = map(cm, 0, 30, 39, 79);
+   pitch = 99;//map(cm, 0, 30, 99, 127);
   }
  }else{
   num = 
-   ((102 - 30) / 24) * 4 + fingerValue - 1;
+   11 + fingerValue;
   pitch = frequencies[num];
  }
 
- 
-  Serial.print('\n');
-  Serial.print(cm);
+
+  Serial.println(pitch);
  
 
  // Delay to avoid bouncing signals
- //delay(50);
+ delay(50);
  
 }
 
 
-void loop()
-{
-
-// TESTING --- Disable the code for reading sensors
-
-
-  
+void loop() {  
  // Desactivate interputs, send a ping
  // message and wait for the answer.
  cli();
@@ -373,49 +370,29 @@ void loop()
  // Check which fingers are pressed
  fingerValue = 5;
  if(!digitalRead(finger4)){
-  fingerValue = 4;
- }
- if(!digitalRead(finger3)){
-  fingerValue = 3;
- }
- if(!digitalRead(finger2)){
-  fingerValue = 2;
- }
- if(!digitalRead(finger1)){
   fingerValue = 1;
  }
-/*
+ if(!digitalRead(finger3)){
+  fingerValue = 2;
+ }
+ if(!digitalRead(finger2)){
+  fingerValue = 3;
+ }
+ if(!digitalRead(finger1)){
+  fingerValue = 4;
+ }
+
  // Update the sustain and
  // sensitivity values
 
  sustainRead = analogRead(sustainPin);
  sensitivityRead = analogRead(sensitivityPin);
 
- // Check the accelerometer
- acc = analogRead(0);
-
-*/
-
-
-  // TESTING --- Made Up Sensor Values
-
-
-  //duration = 2000;
-
-  //fingerValue = 1;
-
-  sustainRead = 1024;
-  sensitivityRead = 512;
-
 
   lis.read();
   acc_x = lis.x;
   acc_y = lis.y;
   acc_z = lis.z;
-
-
-
-  // END OF TESTING 
 
  
  determineParameters();
